@@ -36,16 +36,13 @@ public class Round {
 		// if(__acroz!=null) {
 		// 	return __acroz;
 		// }
-		System.out.println("getAcroz");
 		List<Acronym> acros = new ArrayList<Acronym>(acronyms.size());
-		System.out.println("acro size" + acros.size());
 		acros.addAll(acronyms.values());
 		Map<String,Integer> voted = new HashMap<String,Integer>();
 		for(Acronym acro : acros) {
 			for(String voter:acro.votes) {
 				Integer count = voted.get(voter);
 				if(count==null) {
-					System.out.println("found " + voter);
 					count = 1;
 				} else {
 					System.out.println("cheater " + voter);
@@ -58,7 +55,6 @@ public class Round {
 		while(i.hasNext()) {
 			Acronym acro = i.next();
 			Integer count = voted.get(acro.getPlayer().getUserId());
-			System.out.println("coutn is " + count);
 			if(count==null || count==0) {
 				i.remove();
 			}

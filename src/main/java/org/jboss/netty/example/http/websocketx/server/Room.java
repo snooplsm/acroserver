@@ -43,7 +43,7 @@ public class Room implements Serializable {
 	}
 	
 	public enum State {
-		CHATTING,VOTING,WRITING_ACRONYMS,FACE_OFF
+		CHATTING,VOTING,WRITING_ACRONYMS,FACE_OFF,FACE_OFF_VOTING
 	}
 
 	public String getId() {
@@ -64,7 +64,7 @@ public class Room implements Serializable {
 	
 	public List<Player> getLeaders() {
 		List<Player> leaders = new ArrayList<Player>(players.values());
-		Collections.sort(leaders, new Comparator<Player>() {
+		Comparator<Player> reverse = Collections.reverseOrder(new Comparator<Player>() {
 		
 			public int compare(Player a, Player b) {
 				int c = Integer.valueOf(a.getTotalVoteCount()).compareTo(b.getTotalVoteCount());
@@ -87,6 +87,7 @@ public class Room implements Serializable {
 			}
 			
 		});
+		Collections.sort(leaders,reverse);
 		return leaders;
 	}
 
@@ -154,6 +155,10 @@ public class Room implements Serializable {
 
 	public void startVoting() {
 		state = State.VOTING;
+	}
+	
+	public void startFaceoffVoting() {
+		state = State.FACE_OFF_VOTING;
 	}
 	
 	public void startChatting() {
