@@ -13,7 +13,7 @@ import Handler._
 
 object Timer {
 	val underlying = new org.jboss.netty.util.HashedWheelTimer
-	def apply[U](delay: Long, unit: TimeUnit)(f: => U) {
+	def apply[U](delay: Long, unit: TimeUnit)(f: => U) = {
 		underlying.newTimeout(new TimerTask {
 			def run(timeout: Timeout) {
 				f
@@ -25,14 +25,18 @@ object Timer {
 case class Disconnected(userId: String)
 
 class RoomActor(name: String) extends scala.actors.Actor {
-	self => def answerTime = 10
-	def voteTime = 10
-	def gameOverSeconds = 10
+	self => def answerTime = 60
+	def voteTime = 45
+	def gameOverSeconds = 30
+	def newRoundTime = 10
 	val room = new Room()
 	room.setName(name)
 	room.setAdult(false)
+	room.setAnswerTime(answerTime)
 	room.setId(UUID.randomUUID().toString())
-
+	room.setVoteTime(voteTime)
+	room.setGameOverSeconds(gameOverSeconds)
+	room.setNewRoundTime(newRoundTime)
 	def players = room.getPlayers.asScala
 
 	def cleanup: Unit = {
@@ -65,16 +69,40 @@ class RoomActor(name: String) extends scala.actors.Actor {
 		case Answer(con) if room.getState == Room.State.WRITING_ACRONYMS || room.getState == Room.State.FACE_OFF =>
 			if (faceoffRounds.isEmpty) {
 				println("\n\nadding round answer\n\n")
-				rounds.head.addAnswer(con.request.getUserId, new Acronym(room.getPlayer(con.request.getUserId), con.request.optString("acronym")))
-				val answerCount = Handler.gsonHeavy.toJson(
-				new Response("ac", rounds.head.getAcronyms.size))
-				broadcast(answerCount)
+				var pos = 0
+				var good = true;
+				for(k <- con.request.optString("acronym").toUpperCase.split(" ")) {					
+					println(k + " vs " + rounds.head.getAcronym.charAt(pos))
+					if(k.charAt(0)!=rounds.head.getAcronym.charAt(pos)) {
+						good = false
+					}
+					pos = pos +1;
+				}
+				println(good)
+				if(good) {
+					rounds.head.addAnswer(con.request.getUserId, new Acronym(room.getPlayer(con.request.getUserId), con.request.optString("acronym")))
+					val answerCount = Handler.gsonHeavy.toJson(
+					new Response("ac", rounds.head.getAcronyms.size))
+					broadcast(answerCount)
+				} 
 			} else {
 				println("\n\nadding faceoff answer\n\n");
-				faceoffRounds.head.addAnswer(con.request.getUserId, new Acronym(room.getPlayer(con.request.getUserId), con.request.optString("acronym")))
-				val answerCount = Handler.gsonHeavy.toJson(
-				new Response("ac", faceoffRounds.head.getAcronyms.size))
-				broadcast(answerCount)
+				var pos = 0
+				var good = true;
+				for(k <- con.request.optString("acronym").toUpperCase.split(" ")) {
+					println(k + " vs " + rounds.head.getAcronym.charAt(pos))
+					if(k.charAt(0)!=rounds.head.getAcronym.charAt(pos)) {
+						good = false
+					}
+					pos = pos +1;
+				}
+				println(good)
+				if(good) {
+					faceoffRounds.head.addAnswer(con.request.getUserId, new Acronym(room.getPlayer(con.request.getUserId), con.request.optString("acronym")))
+					val answerCount = Handler.gsonHeavy.toJson(
+					new Response("ac", faceoffRounds.head.getAcronyms.size))
+					broadcast(answerCount)
+				}
 			}
 
 		case Vote(con) => 
@@ -104,7 +132,9 @@ class RoomActor(name: String) extends scala.actors.Actor {
 	
 	def restartGame() {
 		println("\n\n\n\nretarting game\n\n\n")
-		val text = Handler.gsonHeavy.toJson(new Response("go", faceoffRounds.toArray))
+		val jl = new java.util.ArrayList [Round] (faceoffRounds.size)
+		faceoffRounds.foreach (jl.add (_))
+		val text = Handler.gsonHeavy.toJson(new Response("go", new GameOver(jl)))
 		println(text)
 		broadcast(text)
 		for (player <- room.getPlayers.asScala) {
@@ -119,7 +149,7 @@ class RoomActor(name: String) extends scala.actors.Actor {
 	}
 	def startFaceOffRound() {
 		println("\n\nface off round")
-		if (faceoffRounds.size >= 3) {
+		if (faceoffRounds.size >= 1) {
 			println("faceoff over")
 			restartGame()
 			return;
@@ -193,14 +223,17 @@ class RoomActor(name: String) extends scala.actors.Actor {
 		}		
 	}
 	def startRound() {
+	    println("startRound() called")
 		val leaders = room.getLeaders.asScala
-		if (leaders.head != null && leaders.head.getTotalVoteCount >= 3) {
+		if (leaders.head != null && leaders.head.getTotalVoteCount >= 30) {
 			startFaceOffRound();
 		} else if (!room.hasEnoughPlayers) {
+		    println("not enough players chatting")
 			room.startChatting()
 		} else {
+	    	println("enough players, starting")
 			room.startRound()
-			val size = (rounds.size % 4) + 3
+			val size = (rounds.size % 5) + 3
 			val chars = "ABCDEFGHIJKLMNOPQRSTVW".toSeq
 			val acro = rand.shuffle(chars).take(size).mkString
 			rounds = new Round::rounds
@@ -215,10 +248,12 @@ class RoomActor(name: String) extends scala.actors.Actor {
 			rounds.head.setRound(rounds.size)
 			val text = Handler.gsonHeavy.toJson(new Response("sr", rounds.head))
 			broadcast(text)
-			val answerTimeout = Timer.seconds(answerTime + 5) {
+			val answerTimeout = Timer.seconds(answerTime+1) {
 				if (rounds.head.getAnswers.getAnswers.isEmpty) {
+					println("answers are empty")
 					startRound()
 				} else {
+					println("answers are not empty, sending as")
 					val answers = Handler.gsonLight.toJson(
 					new Response("as", rounds.head.getAnswers))
 					broadcast(answers)
@@ -247,9 +282,9 @@ class RoomActor(name: String) extends scala.actors.Actor {
 						} {
 							player.setTotalVoteCount(
 							player.getTotalVoteCount + answer.getVoteCount)
-							broadcast(answers)
 						}
-						Timer.seconds(10) {
+						broadcast(answers)
+						Timer.seconds(newRoundTime+1) {
 							startRound()
 						}
 					}

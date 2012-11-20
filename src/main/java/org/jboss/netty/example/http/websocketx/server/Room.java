@@ -34,8 +34,54 @@ public class Room implements Serializable {
 	
 	private List<Round> rounds = new ArrayList<Round>(5);
 	
+	@Expose
+	private int voteTime;
+	
+	@Expose
+	private int gameOverSeconds;
+	
+	@Expose
+	private int newRoundTime;
+	
+	@Expose
+	private int answerTime;
+	
+	public void setAnswerTime(int atime) {
+		answerTime = atime;
+	}
+	
+	public int getAnswerTime() {
+		return answerTime;
+	}
+	
+	public int getVoteTime() {
+		return voteTime;
+	}
+
+	public void setVoteTime(int voteTime) {
+		this.voteTime = voteTime;
+	}
+
+	public int getGameOverSeconds() {
+		return gameOverSeconds;
+	}
+
+	public void setGameOverSeconds(int gameOverSeconds) {
+		this.gameOverSeconds = gameOverSeconds;
+	}
+
+	public int getNewRoundTime() {
+		return newRoundTime;
+	}
+
+	public void setNewRoundTime(int newRoundTime) {
+		this.newRoundTime = newRoundTime;
+	}
+
+	@Expose
 	private Round currentRound;
 	
+	@Expose
 	private State state = State.CHATTING;
 	
 	public State getState() {
