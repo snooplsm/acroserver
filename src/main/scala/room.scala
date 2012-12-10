@@ -25,10 +25,10 @@ object Timer {
 case class Disconnected(userId: String)
 
 class RoomActor(name: String) extends scala.actors.Actor {
-	self => def answerTime = 60
-	def voteTime = 45
-	def gameOverSeconds = 30
-	def newRoundTime = 10
+	self => def answerTime = 20
+	def voteTime = 20
+	def gameOverSeconds = 20
+	def newRoundTime = 20
 	val room = new Room()
 	room.setName(name)
 	room.setAdult(false)
@@ -161,6 +161,7 @@ class RoomActor(name: String) extends scala.actors.Actor {
 		val chars = "ABCDEFGHIJKLMNOPQRSTVW".toSeq
 		val acro = rand.shuffle(chars).take(size).mkString
 		faceoffRounds = new Round::faceoffRounds
+		room.setCurrentRound(faceoffRounds.head)
 		println("\nnew:")
 		faceoffRounds.head.setCategory("general")
 		faceoffRounds.head.setAcronym(acro)
@@ -225,7 +226,7 @@ class RoomActor(name: String) extends scala.actors.Actor {
 	def startRound() {
 	    println("startRound() called")
 		val leaders = room.getLeaders.asScala
-		if (leaders.head != null && leaders.head.getTotalVoteCount >= 30) {
+		if (leaders.head != null && leaders.head.getTotalVoteCount >= 1) {
 			startFaceOffRound();
 		} else if (!room.hasEnoughPlayers) {
 		    println("not enough players chatting")
@@ -237,6 +238,7 @@ class RoomActor(name: String) extends scala.actors.Actor {
 			val chars = "ABCDEFGHIJKLMNOPQRSTVW".toSeq
 			val acro = rand.shuffle(chars).take(size).mkString
 			rounds = new Round::rounds
+			room.setCurrentRound(rounds.head)
 			println("\nnew:")
 			for {
 				leader <- room.getLeaders.asScala
@@ -275,6 +277,15 @@ class RoomActor(name: String) extends scala.actors.Actor {
 							speedBonus.setTotalVoteCount(speedBonus.getTotalVoteCount + 2)
 						} else {
 							println("no speed bonus")
+						}
+						val winnerVoters = kanswers.getWinnerBonuses;
+						if(winnerVoters!=null) {
+							for{ac <- winnerVoters.asScala} {
+								val player = room.getPlayer(ac);
+								if(player!=null) {
+									player.setTotalVoteCount(player.getTotalVoteCount + 1);
+								}
+							}
 						}
 						for {
 							player <- players

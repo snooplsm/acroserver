@@ -77,21 +77,32 @@ public class Round {
 				if (acro.received < prev.received) {
 					prev = acro;
 				}
+			} else {
+				if(acro.votes.size()>prev.votes.size()) {
+					prev = acro;
+				}
 			}
 		}
 		return prev;
 	}
 
 	public List<String> getWinnerBonuses() {
+		System.out.println("getWinnerBonuses()");
 		List<Acronym> acros = getAcroz();
 		if(acros.isEmpty()) {
+			System.out.println("returning due to empty list");
 			return Collections.emptyList();
 		}
 		Acronym winner = getWinner();
 		List<String> winnars = new ArrayList<String>();
 		if(winner!=null) {
-			for(Acronym acro : acros) {
+			System.out.println("the winner is " + winner.getPlayer().getUsername());
+			winner = acronyms.get(winner.getPlayer().getUserId());
+			System.out.println("winner votes:"+winner.votes.size());
+			for(Acronym acro : acronyms.values()) {
+				System.out.println(acro.votes.size());
 				if(winner.votes.contains(acro.getPlayer().getUserId())) {
+					System.out.println("adding");
 					winnars.add(acro.getPlayer().getUserId());
 				}
 			}		

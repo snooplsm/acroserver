@@ -81,6 +81,14 @@ public class Room implements Serializable {
 	@Expose
 	private Round currentRound;
 	
+	public Round getCurrentRound() {
+		return currentRound;
+	}
+	
+	public void setCurrentRound(Round r) {
+		currentRound = r;
+	}
+	
 	@Expose
 	private State state = State.CHATTING;
 	
