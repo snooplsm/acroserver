@@ -90,8 +90,8 @@ class RoomActor(name: String) extends scala.actors.Actor {
 				var pos = 0
 				var good = true;
 				for(k <- con.request.optString("acronym").toUpperCase.split(" ")) {
-					println(k + " vs " + rounds.head.getAcronym.charAt(pos))
-					if(k.charAt(0)!=rounds.head.getAcronym.charAt(pos)) {
+					println(k + " vs " + faceoffRounds.head.getAcronym.charAt(pos))
+					if(k.charAt(0)!=faceoffRounds.head.getAcronym.charAt(pos)) {
 						good = false
 					}
 					pos = pos +1;
